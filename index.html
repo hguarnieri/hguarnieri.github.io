@@ -1,0 +1,178 @@
+<html>
+<head>
+<style>
+  .box {
+    border-style: solid;
+    display: inline-block;
+    padding: 7px;
+    min-width: 40px;
+    text-align: center;
+    margin: 5px;
+  }
+
+  .input {
+    width: 109%;
+  }
+
+  .content {
+    margin: 0 auto;
+    width: 600px;
+  }
+
+  #buttonCalculate {
+    margin: 0 auto;
+    width: 109%;
+  }
+</style>
+<script src="jquery-3.1.1.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="http://www.w3schools.com/lib/w3.css">
+<link rel="stylesheet" href="http://www.w3schools.com/lib/w3-theme-amber.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+<script>
+  var intervalFunction = null;
+  var nextPrintingPosition = 0;
+
+  var greedyCoinResult;
+  var dynamicCoinResult;
+
+  $(document).ready(function(){
+      $("#buttonCalculate").click(function(){
+          var amount = parseInt($("#inputValue").val());
+          var coins  = new Array();
+
+          var inputCoins = $("#inputCoins").val();
+          inputCoins.split(",").forEach(function(coin) {
+            coins.push(coin);
+          });
+
+          dynamicCoinResult = dynamicAlgorithmFor(amount, coins);
+          greedyCoinResult  = greedyAlgorithmFor(amount, coins);
+          printResultsFor(amount, coins);
+      });
+  });
+
+  function printResultsFor(amount, coins) {
+    // Imprime um título com as moedas selecionadas e o valor
+    print(newCoinsLayoutFor(amount, coins));
+    printDynamicResults();
+  }
+
+  function printDynamicResults() {
+    print("<h2>Algoritmo Dinâmico</h2>");
+    print(newBox("Total:", "Numero:"))
+    intervalFunction = setInterval(printDynamicArray, 50);
+  }
+
+  function printDynamicArray() {
+    // Se ainda há algo a imprimir
+    if (nextPrintingPosition < (dynamicCoinResult.length)) {
+      print(newBox(nextPrintingPosition, dynamicCoinResult[nextPrintingPosition++].coinNumber));
+    } else { // Ao acabar de imprimir, chama a função gulosa
+      clearInterval(intervalFunction);
+      printGreedyResults();
+    }
+  }
+
+  function printGreedyResults() {
+    nextPrintingPosition = 0;
+    print("<br/><h2>Algoritmo Guloso</h2>");
+    print(newBox("Valor:", "Numero:"))
+    intervalFunction = setInterval(printGreedyArray, 50);
+  }
+
+  function printGreedyArray() {
+    if (nextPrintingPosition < (greedyCoinResult.length)) {
+      print(newBox(greedyCoinResult[nextPrintingPosition].coinValue, greedyCoinResult[nextPrintingPosition++].coinNumber));
+    } else {
+      clearInterval(intervalFunction);
+    }
+  }
+
+  function greedyAlgorithmFor(amount, coins) {
+    var greedyCoinResult = new Array();
+
+    for (i = coins.length - 1; i >= 0; i--) {
+      greedyCoinResult[i] = new Object();
+      var numberOfCoins = parseInt(parseInt(amount) / parseInt(coins[i]));
+
+      amount -= numberOfCoins * coins[i];
+
+      greedyCoinResult[i].coinNumber = numberOfCoins;
+      greedyCoinResult[i].coinValue = coins[i];
+    }
+
+    return greedyCoinResult;
+  }
+
+  function dynamicAlgorithmFor(amount, coins) {
+    var dynamicCoinResult = new Array();
+
+    for (i = 0; i < amount + 1; i++) {
+      dynamicCoinResult[i] = new Object();
+      dynamicCoinResult[i].coinNumber = 0;
+      dynamicCoinResult[i].coinValue = 0;
+    }
+
+    var CC = new Array(coins.length);
+
+    for (var amt = 1; amt <= amount; amt++) {
+      // Zera todos os CC
+      for (var j = 0; j < CC.length; j++) {
+          CC[j] = -1;
+      }
+
+      for (var j = 0; j < coins.length; j++) {
+          if (coins[j] <= amt) { // Se o valor da moeda for menor que a posição atual
+              CC[j] = dynamicCoinResult[amt - coins[j]].coinNumber + 1; // Insere em CC o numero de moedas para aquele valor
+          }
+      }
+
+      dynamicCoinResult[amt].coinNumber = -1; // Define como -1 o atual
+
+      for (var j = 0; j < CC.length; j++) {
+        // Se CC for > 0 (O valor é maior que a moeda) E não existe numero de moedas OU numero de moedas atual é maior (otimizar)
+        if (CC[j] > 0 && (dynamicCoinResult[amt].coinNumber === -1 || dynamicCoinResult[amt].coinNumber > CC[j])) {
+            dynamicCoinResult[amt].coinNumber = CC[j];
+            dynamicCoinResult[amt].coinValue = coins[j];
+        }
+      }
+    }
+
+    return dynamicCoinResult;
+  }
+
+  // Helping functions
+  function print(value) {
+    $("#array").append(value);
+  }
+
+  function newBox(position, numberOfCoins) {
+    var inside = "<div>" + position + "</div><div>" + numberOfCoins + "</div>";
+    return "<div class=\"box\" id=box" + position + ">" + inside + "</div>";
+  }
+
+  function newCoinsLayoutFor(amount, coins) {
+    if (coins.length == 0) return "";
+
+    var layout = "<div><h2>Você selecionou as moedas: ";
+    coins.forEach(function(item) {
+      layout += item + ", ";
+    });
+
+    return layout.substring(0, layout.length - 2) + "<br/>Valor: " + amount + "</h2></div>";
+  }
+</script>
+</head>
+<body class="w3-padding">
+  <div class="content">
+    <h4>Moedas:</h4>
+    <input type="text" class="w3-blue w3-border-0 w3-padding input" id="inputCoins" value="1,15,25"/><br/>
+    <h4>Troco:</h4>
+    <input type="text" class="w3-blue w3-border-0 w3-padding input" id="inputValue" value="30"/><br/>
+    <input type="button" class="w3-btn w3-indigo w3-padding w3-margin-top" id="buttonCalculate" value="Calcular!"/>
+    <div id="array">
+    </div>
+  </div>
+</body>
+</html>
